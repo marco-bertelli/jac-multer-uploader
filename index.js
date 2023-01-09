@@ -4,21 +4,27 @@ import express from "express";
 import multer from "multer";
 import os from "os";
 
+import bluebird from "bluebird";
+
 const app = express();
 
 // Set up the multer middleware
 const upload = multer({ dest: os.tmpdir() });
 
 // Set up the file upload route
-app.post('/upload', upload.single('file'), async (req, res) => {
+app.post('/upload', upload.array('file'), async (req, res) => {
     // req.file is the file object
-    const file = req.file;
+    const files = req.files;
 
     // uploading my file from local directory
     // instead of custom name i can use file.filename
-    const uploadedFileUrl = await uploadFile(file.path, 'marco_test_multer.png')
+    const results = await bluebird.Promise.map(files, async (file) => {
+        const uploadedFileUrl = await uploadFile(file.path, file.originalname);
 
-    res.send(`upload finish: ${uploadedFileUrl.Location}`);
+        return uploadedFileUrl;
+    })
+
+    res.send(`upload finish: ${results}`);
 });
 
 app.listen(9000, () => {
